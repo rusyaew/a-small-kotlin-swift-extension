@@ -39,6 +39,9 @@ extension SwiftJava {
 
     @OptionGroup var commonOptions: SwiftJava.CommonOptions
 
+    @Option(help: "What kind of source code to generate (kotlin-jvm or default: java)")
+    var emit: JExtractEmitKind?
+
     @Option(help: "The mode of generation to use for the output files. Used with jextract mode.")
     var mode: JExtractGenerationMode?
 
@@ -104,6 +107,7 @@ extension SwiftJava {
 extension SwiftJava.JExtractCommand {
   func runSwiftJavaCommand(config: inout Configuration) async throws {
     configure(&config.javaPackage, overrideWith: self.javaPackage)
+    configure(&config.emit, overrideWith: self.emit)
     configure(&config.mode, overrideWith: self.mode)
     config.swiftModule = self.effectiveSwiftModule
     config.outputJavaDirectory = outputJava
@@ -126,7 +130,7 @@ extension SwiftJava.JExtractCommand {
       config.inputSwiftDirectory = "\(FileManager.default.currentDirectoryPath)/Sources/\(swiftModule)"
     }
 
-    print("[debug][swift-java] Running 'swift-java jextract' in mode: " + "\(config.effectiveMode)".bold)
+    print("[debug][swift-java] Running 'swift-java jextract' in mode: " + "\(config.effectiveMode)".bold + ", with emit" + "\(config.effectiveEmit)".bold)
 
     // Load all of the dependent configurations and associate them with Swift modules.
     let dependentConfigs = try loadDependentConfigs(dependsOn: self.dependsOn)
@@ -137,6 +141,11 @@ extension SwiftJava.JExtractCommand {
 
   /// Check if the configured modes are compatible, and fail if not
   func checkModeCompatibility(config: Configuration) throws {
+    if config.effectiveEmit == .kotlinJvm {
+      // For Task 1, temporarily disable compatibility checks (we only generate stubs) no JNI/FFM happens
+      return
+    }
+
     if config.effectiveMode == .ffm {
       guard config.effectiveMemoryManagementMode == .explicit else {
         throw IllegalModeCombinationError(
@@ -176,6 +185,7 @@ struct IllegalModeCombinationError: Error {
 }
 
 extension JExtractGenerationMode: ExpressibleByArgument {}
+extension JExtractEmitKind: ExpressibleByArgument {}
 extension JExtractMinimumAccessLevelMode: ExpressibleByArgument {}
 extension JExtractMemoryManagementMode: ExpressibleByArgument {}
 extension JExtractAsyncFuncMode: ExpressibleByArgument {}

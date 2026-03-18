@@ -38,6 +38,11 @@ public struct Configuration: Codable {
 
   public var outputJavaDirectory: String?
 
+  public var emit: JExtractEmitKind?
+  public var effectiveEmit: JExtractEmitKind {
+    emit ?? .default
+  }
+
   public var mode: JExtractGenerationMode?
   public var effectiveMode: JExtractGenerationMode {
     mode ?? .default
